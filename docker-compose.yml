@@ -1,12 +1,10 @@
-version: '3.5'
+version: "3.5"
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: karinetavares/docker-demo-1:1.0
     container_name: nest-docker
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - ./src:/app/src
