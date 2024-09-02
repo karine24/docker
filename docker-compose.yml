@@ -13,10 +13,23 @@ services:
       - PG_DB=postgres
       - PG_PORT=5432
       - PG_HOST=db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - db
+      - redis
+    networks:
+      - backend
     volumes:
       - ./src:/app/src
+
+  redis:
+    image: redis
+    networks:
+      - backend
+    ports:
+      - 6379:6379
+
   db:
     container_name: db
     image: postgres:12
@@ -26,7 +39,14 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+    networks:
+      - backend
     volumes:
       - pgdata:/var/lib/postgresql/data
+
 volumes:
   pgdata: {}
+
+networks:
+  backend:
+    driver: "bridge"
