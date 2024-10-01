@@ -4,12 +4,13 @@ import { Redis, RedisKey } from "ioredis";
 
 @Injectable()
 export class CacheService {
-  private readonly cache: Redis;
+  private cache: Redis;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {}
+
+  openConnection() {
     this.cache = new Redis({
       maxRetriesPerRequest: 3,
-      enableOfflineQueue: false,
       offlineQueue: false,
       host: this.configService.get<string>("REDIS_HOST"),
       port: this.configService.get<number>("REDIS_PORT"),
@@ -19,8 +20,17 @@ export class CacheService {
     });
   }
 
+  async closeConnection() {
+    if (this.cache) {
+      await this.cache.quit();
+    }
+  }
+
   async get(key: RedisKey): Promise<string> {
-    return this.cache.get(key);
+    this.openConnection();
+    const cacheReturn = this.cache.get(key);
+    await this.closeConnection();
+    return cacheReturn;
   }
 
   async set(
@@ -28,14 +38,21 @@ export class CacheService {
     value: string,
     ttl?: number
   ): Promise<string | Buffer | number> {
+    let cacheReturn: string | Buffer | number;
+    this.openConnection();
     if (ttl) {
-      return this.cache.set(key, value, "PX", ttl);
+      cacheReturn = await this.cache.set(key, value, "PX", ttl);
     } else {
-      return this.cache.set(key, value);
+      cacheReturn = await this.cache.set(key, value);
     }
+    await this.closeConnection();
+
+    return cacheReturn;
   }
 
   async deleteAll(redisKeys: RedisKey[]): Promise<void> {
+    this.openConnection();
     await this.cache.del(redisKeys);
+    await this.closeConnection();
   }
 }
